@@ -1,0 +1,24 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Integrazione MELCloud gi\u00e0 configurata per questa e-mail. La password di accesso \u00e8 stata aggiornata.",
+            "already_imported": "Integrazione MELCloud gi\u00e0 configurata per questa e-mail. Configurazione abortita."
+        },
+        "error": {
+            "cannot_connect": "Impossibile connettersi, si prega di riprovare",
+            "invalid_auth": "Autenticazione non valida, si prega di riprovare",
+            "unknown": "Errore imprevisto"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "password": "Password MELCloud.",
+                    "username": "Email utilizzata per accedere a MELCloud.",
+                    "language": "Lingua"
+                },
+                "description": "Connettiti utilizzando il tuo account MELCloud.",
+                "title": "Connettersi a MELCloud"
+            }
+        }
+    }
+}
