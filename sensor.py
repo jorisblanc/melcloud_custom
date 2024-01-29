@@ -118,8 +118,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
         entities.append(OutdoorTemperature(mel_device, mel_device.device))
         entities.append(FlowTemperature(mel_device, mel_device.device))
         entities.append(ReturnTemperature(mel_device, mel_device.device))
-        entities.append(MixingTankTemperature(mel_device, mel_device.device))
-        entities.append(TankWaterTemperature(mel_device, mel_device.device))
+
+        entities.append(DefrostMode(mel_device, mel_device.device))
+        entities.append(WaterPump1Status(mel_device, mel_device.device))
+        entities.append(BoosterHeater1Status(mel_device, mel_device.device))
+        entities.append(BoosterHeater2Status(mel_device, mel_device.device))
 
         entities.append(DemandPercentage(mel_device, mel_device.device))
         entities.append(HeatPumpFrequency(mel_device, mel_device.device))
@@ -142,12 +145,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if mel_device.device._device_conf['Device']['HasHotWaterTank']:
             entities.append(DailyHotWaterEnergyConsumed(mel_device, mel_device.device))
             entities.append(DailyHotWaterEnergyProduced(mel_device, mel_device.device))
+            entities.append(ForcedHotWaterMode(mel_device, mel_device.device))
+            entities.append(TankWaterTemperature(mel_device, mel_device.device))
 
         if mel_device.device._device_conf['Device']['HasThermostatZone1']:
             entities.append(TargetHCTemperatureZone1(mel_device, mel_device.device))
             entities.append(FlowTemperatureZone1(mel_device, mel_device.device))
             entities.append(ReturnTemperatureZone1(mel_device, mel_device.device))
             entities.append(RoomTemperatureZone1(mel_device, mel_device.device))
+            entities.append(WaterPump2Status(mel_device, mel_device.device))
         
         if (mel_device.device._device_conf['Device']['HasThermostatZone2'] and 
             mel_device.device._device_conf['Device']['HasZone2']): 
@@ -155,6 +161,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
             entities.append(FlowTemperatureZone2(mel_device, mel_device.device))
             entities.append(ReturnTemperatureZone2(mel_device, mel_device.device))
             entities.append(RoomTemperatureZone2(mel_device, mel_device.device))
+            entities.append(WaterPump3Status(mel_device, mel_device.device))
+        
+        if(mel_device.device._device_conf['Device']['HasHotWaterTank'] and
+            mel_device.device._device_conf['Device']['HasThermostatZone1']):
+            entities.append(ValveStatus3Way(mel_device, mel_device.device))
+        
+        if mel_device.device._device_conf['Device']['MixingTankWaterTemperature'] != 25:
+            entities.append(MixingTankTemperature(mel_device, mel_device.device))
+
+        
 
     async_add_entities(entities, False)
 
@@ -345,7 +361,7 @@ class MixingTankTemperature(CoordinatorEntity, SensorEntity):
     @property
     def available(self) -> bool:
         """Return True if Zone 1 exists."""
-        return self._device._device_conf['Device']['MixingTankWaterTemperature'] > -38
+        return self._device._device_conf['Device']['MixingTankWaterTemperature'] > 25
 
     @property
     def native_value(self) -> Optional[datetime]:
@@ -535,7 +551,222 @@ class ErrorMessage(CoordinatorEntity, SensorEntity):
     def device_info(self):
         """Return a device description for device registry."""
         return self._api.device_info
+
+
+class DefrostMode(CoordinatorEntity, SensorEntity):
+    """Representation of the defrost mode."""
+
+    def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
+        """Initialize device."""
+        super().__init__(api.coordinator)
+        self._api = api
+        self._device = device
+        self._attr_icon = "mdi:snowflake-melt"
+        self._attr_name = f"{api.name} Defrost Mode"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-defrost_mode"
     
+    @property
+    def native_value(self) -> Optional[str]:
+        """Return tank temperature."""
+        return self._device._device_conf['Device']['DefrostMode']
+        
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        return self._api.device_info
+ 
+class BoosterHeater1Status(CoordinatorEntity, SensorEntity):
+    """Representation of the booster heater 1 status."""
+
+    def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
+        """Initialize device."""
+        super().__init__(api.coordinator)
+        self._api = api
+        self._device = device
+        self._attr_icon = "mdi:lightning-bolt"
+        self._attr_name = f"{api.name} Booster Heater 1 Status"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-booster_heater_1_status"
+    
+    @property
+    def native_value(self) -> Optional[str]:
+        """Return tank temperature."""
+        if self._device._device_conf['Device']['BoosterHeater1Status']:
+            return "On"
+        return "Off"
+        
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        return self._api.device_info
+ 
+class BoosterHeater2Status(CoordinatorEntity, SensorEntity):
+    """Representation of the booster heater 2 status."""
+
+    def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
+        """Initialize device."""
+        super().__init__(api.coordinator)
+        self._api = api
+        self._device = device
+        self._attr_icon = "mdi:lightning-bolt"
+        self._attr_name = f"{api.name} Booster Heater 2 Status"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-booster_heater_2_status"
+    
+    @property
+    def native_value(self) -> Optional[str]:
+        """Return tank temperature."""
+        if self._device._device_conf['Device']['BoosterHeater2Status']:
+            return "On"
+        return "Off"
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        return self._api.device_info
+  
+class WaterPump1Status(CoordinatorEntity, SensorEntity):
+    """Representation of the water pump 1 status."""
+
+    def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
+        """Initialize device."""
+        super().__init__(api.coordinator)
+        self._api = api
+        self._device = device
+        self._attr_name = f"{api.name} Water Pump 1 Status"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-water_pump_1_status"
+    
+    @property
+    def native_value(self) -> Optional[str]:
+        """Return tank temperature."""
+        if self._device._device_conf['Device']['WaterPump1Status']:
+            return "On"
+        return "Off"
+    
+    @property
+    def icon(self) -> str | None:
+        if self._device._device_conf['Device']['WaterPump1Status']:
+            return "mdi:pump"
+        return "mdi:pump-off"
+        
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        return self._api.device_info
+
+class WaterPump2Status(CoordinatorEntity, SensorEntity):
+    """Representation of the water pump 2 status."""
+
+    def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
+        """Initialize device."""
+        super().__init__(api.coordinator)
+        self._api = api
+        self._device = device
+        self._attr_icon = "mdi:pump"
+        self._attr_name = f"{api.name} Water Pump 2 Status"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-water_pump_2_status"
+    
+    @property
+    def native_value(self) -> Optional[str]:
+        """Return tank temperature."""
+        if self._device._device_conf['Device']['WaterPump2Status']:
+            return "On"
+        return "Off"
+        
+    @property
+    def icon(self) -> str | None:
+        if self._device._device_conf['Device']['WaterPump2Status']:
+            return "mdi:pump"
+        return "mdi:pump-off"
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        return self._api.device_info
+ 
+class WaterPump3Status(CoordinatorEntity, SensorEntity):
+    """Representation of the water pump 3 status."""
+
+    def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
+        """Initialize device."""
+        super().__init__(api.coordinator)
+        self._api = api
+        self._device = device
+        self._attr_name = f"{api.name} Water Pump 3 Status"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-water_pump_3_status"
+    
+    @property
+    def native_value(self) -> Optional[str]:
+        """Return tank temperature."""
+        if self._device._device_conf['Device']['WaterPump3Status']:
+            return "On"
+        return "Off"
+
+    @property
+    def icon(self) -> str | None:
+        if self._device._device_conf['Device']['WaterPump3Status']:
+            return "mdi:pump"
+        return "mdi:pump-off"
+        
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        return self._api.device_info
+ 
+class ValveStatus3Way(CoordinatorEntity, SensorEntity):
+    """Representation of the 3 way valve status."""
+
+    def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
+        """Initialize device."""
+        super().__init__(api.coordinator)
+        self._api = api
+        self._device = device
+        self._attr_icon = "mdi:pipe-valve"
+        self._attr_name = f"{api.name} 3 Way Valve"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-valve_status_3_way"
+    
+    @property
+    def native_value(self) -> Optional[str]:
+        """Return tank temperature."""
+        if self._device._device_conf['Device']['ValveStatus3Way']:
+            return "ECS"
+        return "Chauffage"
+        
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        return self._api.device_info
+ 
+class ForcedHotWaterMode(CoordinatorEntity, SensorEntity):
+    """Representation of the forced hot water mode."""
+
+    def __init__(self, api: MelCloudDevice, device: AtwDevice) -> None:
+        """Initialize device."""
+        super().__init__(api.coordinator)
+        self._api = api
+        self._device = device
+        self._attr_icon = "mdi:thermometer-water"
+        self._attr_name = f"{api.name} Forced Hot Water Mode"
+        self._attr_unique_id = f"{api.device.serial}-{api.device.mac}-forced_hot_water_mode"
+    
+    @property
+    def native_value(self) -> Optional[str]:
+        """Return tank temperature."""
+        if self._device._device_conf['Device']['ForcedHotWaterMode']:
+            return "On"
+        return "Off"  
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        return self._api.device_info
+ 
+ 
+
+
 ## Energy
 
 class CurrentEnergyConsumed(CoordinatorEntity, SensorEntity):
